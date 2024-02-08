@@ -15,8 +15,8 @@ class Prog(QWidget):
     def initUI(self):
         self.setGeometry(700, 300, 900, 550)
 
-        self.lon = "44.913507"
-        self.lat = "53.224134"
+        self.lon = 44.915441
+        self.lat = 53.224134
         self.scale = 0.002
 
         self.image = QLabel(self)
@@ -35,7 +35,7 @@ class Prog(QWidget):
         api_server = "http://static-maps.yandex.ru/1.x/"
 
         params = {
-            "ll": ",".join([self.lon, self.lat]),
+            "ll": ",".join([str(self.lon), str(self.lat)]),
             "spn": ",".join([str(self.scale), str(self.scale)]),
             "l": "map"
         }
@@ -53,14 +53,22 @@ class Prog(QWidget):
             file.write(response.content)
 
     def closeEvent(self, event):
-        """При закрытии формы подчищаем за собой"""
         os.remove(self.map_file)
 
+    # чтобы быстрее приближало или отдаляло зажимайте кнопку
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_PageDown:
-            self.scale += 0.001 if self.scale <= 50 else 50
+            self.scale = self.scale + 0.001 if self.scale <= 50 else 50
         elif event.key() == QtCore.Qt.Key_PageUp:
-            self.scale -= 0.001 if self.scale != 0.0 else 0.0
+            self.scale = self.scale - 0.001 if self.scale != 0.0 else 0.0
+        elif event.key() == QtCore.Qt.Key_Left:
+            self.lon = self.lon - 0.001 if self.lon + 0.001 >= -180 else 179.0
+        elif event.key() == QtCore.Qt.Key_Right:
+            self.lon = self.lon + 0.001 if self.lon + 0.001 <= 179.0 else -180.0
+        elif event.key() == QtCore.Qt.Key_Up:
+            self.lat = self.lat + 0.001 if self.lat + 0.001 <= 83 else -83.0
+        elif event.key() == QtCore.Qt.Key_Down:
+            self.lat = self.lat - 0.001 if self.lat + 0.001 >= -83.0 else 83.0
         self.getImage()
         self.show_map()
 
