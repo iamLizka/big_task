@@ -2,9 +2,16 @@ import sys
 import os
 
 import requests
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QComboBox, QLineEdit, QPushButton
+from PyQt5.QtGui import QPixmap, QKeyEvent
 from PyQt5 import QtCore
+
+
+# создаю класс для QComboBox, переопределяя метод для обработки событий клавиатуры,
+# чтобы при нажатии стрелочек на клавиатуре значение ComboBox не менялось
+class CustomComboBox(QComboBox):
+    def keyPressEvent(self, event: QKeyEvent):
+        event.ignore()
 
 
 class Prog(QWidget):
@@ -13,16 +20,33 @@ class Prog(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setGeometry(700, 300, 900, 550)
+        self.setGeometry(700, 300, 800, 450)
 
         self.lon = 44.915441
         self.lat = 53.224134
         self.scale = 0.002
+        self.map = "map"
 
         self.image = QLabel(self)
-        self.image.move(300, 25)
-        self.image.resize(600, 500)
+        self.image.setGeometry(200, 0, 600, 450)
 
+        self.cheak_map = CustomComboBox(self)
+        self.cheak_map.setGeometry(15, 70, 170, 25)
+        self.cheak_map.addItem("схема")
+        self.cheak_map.addItem("спутник")
+        self.cheak_map.addItem("гибрид")
+        self.cheak_map.currentTextChanged.connect(self.cheaking_map)
+
+        self.cheaking_map()
+
+
+    def cheaking_map(self):
+        if self.cheak_map.currentText() == "схема":
+            self.map = "map"
+        elif self.cheak_map.currentText() == "спутник":
+            self.map = "sat"
+        else:
+            self.map = "sat,skl"
         self.getImage()
         self.show_map()
 
@@ -37,7 +61,7 @@ class Prog(QWidget):
         params = {
             "ll": ",".join([str(self.lon), str(self.lat)]),
             "spn": ",".join([str(self.scale), str(self.scale)]),
-            "l": "map"
+            "l": self.map,
         }
         response = requests.get(api_server, params=params)
 
