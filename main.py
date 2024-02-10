@@ -27,31 +27,36 @@ class Prog(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setGeometry(700, 300, 800, 450)
+        self.setGeometry(700, 300, 600, 550)
 
         self.image = QLabel(self)
-        self.image.setGeometry(200, 0, 600, 450)
+        self.image.setGeometry(0, 0, 600, 450)
 
         self.cheak_map = CustomComboBox(self)
-        self.cheak_map.setGeometry(15, 40, 170, 25)
+        self.cheak_map.setGeometry(10, 460, 180, 25)
         self.cheak_map.addItem("схема")
         self.cheak_map.addItem("спутник")
         self.cheak_map.addItem("гибрид")
         self.cheak_map.currentTextChanged.connect(self.cheaking_map)
 
         self.find_object = QLineEdit(self)
-        self.find_object.setGeometry(15, 70, 170, 25)
+        self.find_object.setGeometry(10, 490, 180, 25)
         self.find_object.setPlaceholderText("Введите название объекта")
         self.find_object.textChanged.connect(self.handleTextChanged)
 
-        self.initial_data()
-
         self.but_find = QPushButton("Найти", self)
-        self.but_find.setGeometry(15, 100, 60, 25)
+        self.but_find.setGeometry(10, 520, 60, 25)
         self.but_find.clicked.connect(self.find_coords)
 
+        self.output_ful_address = QLineEdit(self)
+        self.output_ful_address.setGeometry(200, 460, 260, 25)
+        self.output_ful_address.setText("щас очистится")
+        self.output_ful_address.setReadOnly(True)
+
+        self.initial_data()
+
         self.but_find = QPushButton("Сбросить", self)
-        self.but_find.setGeometry(15, 405, 80, 30)
+        self.but_find.setGeometry(510, 510, 80, 30)
         self.but_find.clicked.connect(self.initial_data)
 
     # начальные данные
@@ -63,6 +68,7 @@ class Prog(QWidget):
         self.cheak_map.setCurrentText("схема")  # текущий тип карты
         self.find_object.clear()  # очищаем поля для ввода названия объекта
         self.find_object.setPlaceholderText("Введите название объекта")
+        self.output_ful_address.clear()  # очищаем поля для вывода полного адреса объекта
         self.cheaking_map()
 
     # нажодение координат объекта по названию
@@ -82,6 +88,11 @@ class Prog(QWidget):
 
         json_response = response.json()
         try:
+            full_address = json_response["response"]["GeoObjectCollection"][
+                "featureMember"][0]["GeoObject"]["metaDataProperty"]["GeocoderMetaData"][
+                "AddressDetails"]["Country"]["AddressLine"]
+            self.output_ful_address.setText(full_address)
+
             size = json_response["response"]["GeoObjectCollection"][
                 "featureMember"][0]["GeoObject"]["boundedBy"]["Envelope"]
             self.scale1, self.scale2 = find(size)  # масштаб
@@ -177,7 +188,7 @@ class Prog(QWidget):
         else:
             self.delta2 = 1
 
-    # если поле для ввода названия объекта не активно, то там выводится надпись
+    # пока пользователь чего-нибудь не написал в поле, там выводится надпись =>
     def handleTextChanged(self, text):
         if not text and self.find_object.hasFocus():
             self.find_object.setPlaceholderText("Введите название объекта")
