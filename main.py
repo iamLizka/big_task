@@ -160,13 +160,13 @@ class Prog(QWidget):
             self.scale2 = self.scale2 - self.delta2 if self.scale2 - self.delta2 > 0.0 else 0.0
 
         elif event.key() == QtCore.Qt.Key_Left:
-            self.lon = self.lon - 0.001 if self.lon + 0.001 >= -180 else 179.0
+            self.lon = self.lon - self.delta1 if self.lon + self.delta1 >= -180 else 179.0
         elif event.key() == QtCore.Qt.Key_Right:
-            self.lon = self.lon + 0.001 if self.lon + 0.001 <= 179.0 else -180.0
+            self.lon = self.lon + self.delta2 if self.lon + self.delta2 <= 179.0 else -180.0
         elif event.key() == QtCore.Qt.Key_Up:
-            self.lat = self.lat + 0.001 if self.lat + 0.001 <= 83 else -83.0
+            self.lat = self.lat + self.delta1 if self.lat + self.delta1 <= 83 else -83.0
         elif event.key() == QtCore.Qt.Key_Down:
-            self.lat = self.lat - 0.001 if self.lat + 0.001 >= -83.0 else 83.0
+            self.lat = self.lat - self.delta2 if self.lat + self.delta2 >= -83.0 else 83.0
 
         self.delta_scale()
         self.getImage()
