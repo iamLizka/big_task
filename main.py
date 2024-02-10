@@ -7,6 +7,7 @@ from PyQt5.QtGui import QPixmap, QKeyEvent
 from PyQt5 import QtCore
 
 
+#  нахождение масштаба, при показе объекта
 def find(size):
     delta1 = abs(float(size["lowerCorner"].split()[0]) - float(size["upperCorner"].split()[0]))
     delta2 = abs(float(size["lowerCorner"].split()[1]) - float(size["upperCorner"].split()[1]))
@@ -14,7 +15,7 @@ def find(size):
 
 
 # создаю класс для QComboBox, переопределяя метод для обработки событий клавиатуры,
-# чтобы при нажатии стрелочек на клавиатуре значение ComboBox не менялось
+# чтобы, при нажатии стрелочек на клавиатуре, значение ComboBox не менялось
 class CustomComboBox(QComboBox):
     def keyPressEvent(self, event: QKeyEvent):
         event.ignore()
@@ -28,32 +29,43 @@ class Prog(QWidget):
     def initUI(self):
         self.setGeometry(700, 300, 800, 450)
 
-        self.lon, self.lat = 44.915441, 53.224134
-        self.scale1, self.scale2 = 0.002, 0.002
-        self.delta1, self.delta2 = 0.001, 0.001
-        self.map = "map"
-        self.label_on_map = None
-
         self.image = QLabel(self)
         self.image.setGeometry(200, 0, 600, 450)
 
         self.cheak_map = CustomComboBox(self)
-        self.cheak_map.setGeometry(15, 70, 170, 25)
+        self.cheak_map.setGeometry(15, 40, 170, 25)
         self.cheak_map.addItem("схема")
         self.cheak_map.addItem("спутник")
         self.cheak_map.addItem("гибрид")
         self.cheak_map.currentTextChanged.connect(self.cheaking_map)
 
         self.find_object = QLineEdit(self)
-        self.find_object.setGeometry(15, 100, 170, 25)
+        self.find_object.setGeometry(15, 70, 170, 25)
         self.find_object.setPlaceholderText("Введите название объекта")
         self.find_object.textChanged.connect(self.handleTextChanged)
-        self.cheaking_map()
+
+        self.initial_data()
 
         self.but_find = QPushButton("Найти", self)
-        self.but_find.setGeometry(15, 130, 60, 25)
+        self.but_find.setGeometry(15, 100, 60, 25)
         self.but_find.clicked.connect(self.find_coords)
 
+        self.but_find = QPushButton("Сбросить", self)
+        self.but_find.setGeometry(15, 405, 80, 30)
+        self.but_find.clicked.connect(self.initial_data)
+
+    # начальные данные
+    def initial_data(self):
+        self.lon, self.lat = 44.915441, 53.224134  # широта и долгота
+        self.scale1, self.scale2 = 0.002, 0.002  # масштаб
+        self.delta1, self.delta2 = 0.001, 0.001  # изменение масштаба
+        self.label_on_map = None  # метка на карте
+        self.cheak_map.setCurrentText("схема")  # текущий тип карты
+        self.find_object.clear()  # очищаем поля для ввода названия объекта
+        self.find_object.setPlaceholderText("Введите название объекта")
+        self.cheaking_map()
+
+    # нажодение координат объекта по названию
     def find_coords(self):
         toponym_to_find = self.find_object.text()
         geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
@@ -72,13 +84,14 @@ class Prog(QWidget):
         try:
             size = json_response["response"]["GeoObjectCollection"][
                 "featureMember"][0]["GeoObject"]["boundedBy"]["Envelope"]
-            self.scale1, self.scale2 = find(size)
+            self.scale1, self.scale2 = find(size)  # масштаб
             self.delta_scale()
 
             coords_center = json_response["response"]["GeoObjectCollection"
             ]["featureMember"][0]["GeoObject"]["Point"]["pos"]
+            # широта и долгота
             self.lon, self.lat = float(coords_center.split(" ")[0]), float(coords_center.split(" ")[1])
-            self.label_on_map = f'{",".join([str(self.lon), str(self.lat)])},pm2rdm'
+            self.label_on_map = f'{",".join([str(self.lon), str(self.lat)])},pm2rdm' # метка на карту
 
             self.getImage()
             self.show_map()
@@ -87,6 +100,7 @@ class Prog(QWidget):
             self.find_object.clear()
             self.find_object.setPlaceholderText("Объект не найден")
 
+    # отслеживание какой тип карты выбран
     def cheaking_map(self):
         if self.cheak_map.currentText() == "схема":
             self.map = "map"
@@ -97,11 +111,12 @@ class Prog(QWidget):
         self.getImage()
         self.show_map()
 
+    # вывод карты
     def show_map(self):
-        ## Изображение
         self.pixmap = QPixmap(self.map_file)
         self.image.setPixmap(self.pixmap)
 
+    # получение из static-maps карты
     def getImage(self):
         api_server = "http://static-maps.yandex.ru/1.x/"
 
@@ -123,11 +138,9 @@ class Prog(QWidget):
         with open(self.map_file, "wb") as file:
             file.write(response.content)
 
-    def closeEvent(self, event):
-        os.remove(self.map_file)
-
-    # чтобы быстрее приближало или отдаляло зажимайте кнопку
+    # изменение масштаба и движение по карте при нажатии на клавиши
     def keyPressEvent(self, event):
+        # чтобы быстрее приближало или отдаляло зажимайте кнопку
         if event.key() == QtCore.Qt.Key_PageDown:
             self.scale1 = self.scale1 + self.delta1 if self.scale1 + self.delta1 <= 50 else 50
             self.scale2 = self.scale2 + self.delta2 if self.scale2 + self.delta2 <= 50 else 50
@@ -148,6 +161,7 @@ class Prog(QWidget):
         self.getImage()
         self.show_map()
 
+    # относительно текущего масштаба изменяем дельту масштаба
     def delta_scale(self):
         if self.scale1 < 0.05:
             self.delta1 = 0.001
@@ -163,9 +177,14 @@ class Prog(QWidget):
         else:
             self.delta2 = 1
 
+    # если поле для ввода названия объекта не активно, то там выводится надпись
     def handleTextChanged(self, text):
         if not text and self.find_object.hasFocus():
             self.find_object.setPlaceholderText("Введите название объекта")
+
+    # при закрытии окна удаляем файлик с картой
+    def closeEvent(self, event):
+        os.remove(self.map_file)
 
 
 if __name__ == "__main__":
